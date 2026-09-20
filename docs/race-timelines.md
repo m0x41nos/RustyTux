@@ -54,9 +54,9 @@ sequenceDiagram
     participant T as Timer expiry
 
     S->>S: send first complete keepalive frame
-    S-->>C: signal first-frame gate; start close delay
+    S-->>C: signal first-frame gate and start close delay
     S->>S: send remaining keepalive filler
-    S->>S: wait trigger delay; send final partial frame
+    S->>S: wait trigger delay and send final partial frame
     Note over S,P: successful schedule makes filler and tail available before A
 
     P->>P: loopback TCP invokes espintcp_data_ready()
