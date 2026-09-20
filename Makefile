@@ -1,0 +1,46 @@
+SHELL = /bin/sh
+
+CC ?= cc
+CFLAGS ?= -O0 -Wall -Wextra -pedantic
+PTHREAD_FLAGS := -pthread
+EFFECTIVE_CFLAGS = -std=c99 $(CFLAGS) $(PTHREAD_FLAGS)
+LDFLAGS ?=
+STATIC_LDFLAGS := -static
+EFFECTIVE_LDFLAGS = $(STATIC_LDFLAGS) $(LDFLAGS)
+LDLIBS ?=
+
+SRC_DIR := src
+TARGET := exploit
+TARGET_SOURCES := $(SRC_DIR)/exploit.c $(SRC_DIR)/options.c \
+	$(SRC_DIR)/sync.c $(SRC_DIR)/socket_helpers.c $(SRC_DIR)/modprobe.c
+TARGET_OBJECTS := $(patsubst $(SRC_DIR)/%.c,%.o,$(TARGET_SOURCES))
+TARGET_HEADERS := $(SRC_DIR)/options.h $(SRC_DIR)/sync.h \
+	$(SRC_DIR)/socket_helpers.h $(SRC_DIR)/modprobe.h
+
+PREFETCH_SRC := $(SRC_DIR)/prefetch.c
+PREFETCH_HDRS := $(SRC_DIR)/prefetch.h
+PREFETCH_BIN := prefetch
+PREFETCH_OBJ := prefetch.o
+PREFETCH_MAIN_RENAME := -Dmain=prefetch_main
+
+CPPFLAGS += -I$(SRC_DIR)
+
+.DELETE_ON_ERROR:
+.PHONY: all clean
+
+all: $(TARGET)
+
+$(TARGET): $(TARGET_OBJECTS) $(PREFETCH_OBJ)
+	$(CC) $(EFFECTIVE_CFLAGS) $(CPPFLAGS) $(EFFECTIVE_LDFLAGS) -o $@ $^ $(LDLIBS)
+
+$(TARGET_OBJECTS): %.o: $(SRC_DIR)/%.c $(TARGET_HEADERS) $(PREFETCH_HDRS)
+	$(CC) $(EFFECTIVE_CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+$(PREFETCH_OBJ): $(PREFETCH_SRC) $(PREFETCH_HDRS)
+	$(CC) $(EFFECTIVE_CFLAGS) $(PREFETCH_MAIN_RENAME) $(CPPFLAGS) -c $(PREFETCH_SRC) -o $@
+
+$(PREFETCH_BIN): $(PREFETCH_SRC) $(PREFETCH_HDRS)
+	$(CC) $(EFFECTIVE_CFLAGS) $(CPPFLAGS) $(EFFECTIVE_LDFLAGS) -o $@ $(PREFETCH_SRC) $(LDLIBS)
+
+clean:
+	$(RM) $(TARGET) $(PREFETCH_BIN) $(TARGET_OBJECTS) $(PREFETCH_OBJ)
